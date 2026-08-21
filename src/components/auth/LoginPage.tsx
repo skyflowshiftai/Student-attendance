@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Zap, ShieldCheck, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
+import { Zap, ShieldCheck, Lock, User, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -9,6 +9,7 @@ interface LoginPageProps {
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +23,18 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       const cleanPass = password.trim();
 
       // Fixed credentials: Name: AI campuspulse, Password: AIcampuspulse
-      if ((cleanUser === 'ai campuspulse' || cleanUser === 'campuspulse' || cleanUser === 'admin') && cleanPass === 'AIcampuspulse') {
+      const isUserValid =
+        cleanUser === 'ai campuspulse' ||
+        cleanUser === 'aicampuspulse' ||
+        cleanUser === 'campuspulse' ||
+        cleanUser === 'admin';
+
+      const isPassValid =
+        cleanPass === 'AIcampuspulse' ||
+        cleanPass.toLowerCase() === 'aicampuspulse' ||
+        cleanPass === 'AI campuspulse';
+
+      if (isUserValid && isPassValid) {
         localStorage.setItem(
           'campuspulse_auth',
           JSON.stringify({
@@ -34,10 +46,16 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         );
         onLogin();
       } else {
-        setError('Invalid credentials. Please enter authorized username and password.');
+        setError('Invalid credentials. Please verify your username and password.');
         setLoading(false);
       }
-    }, 400);
+    }, 300);
+  };
+
+  const handleFillCredentials = () => {
+    setUsername('AI campuspulse');
+    setPassword('AIcampuspulse');
+    setError(null);
   };
 
   return (
@@ -74,7 +92,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               User / Faculty Name
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
               <input
                 type="text"
                 required
@@ -91,15 +109,28 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
-                placeholder="••••••••••••"
+                placeholder="AIcampuspulse"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-11 pl-9 pr-3 text-sm rounded-xl border border-neutral-200 bg-neutral-50 text-black placeholder:text-neutral-400 focus-ring"
+                className="w-full h-11 pl-9 pr-10 text-sm rounded-xl border border-neutral-200 bg-neutral-50 text-black placeholder:text-neutral-400 focus-ring"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-400 hover:text-black transition-colors cursor-pointer"
+                title={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
             </div>
           </div>
 
@@ -114,7 +145,22 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </Button>
         </form>
 
-        <div className="mt-6 pt-5 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-400">
+        {/* Quick Demo Credentials Hint */}
+        <div className="mt-5 p-3 rounded-xl bg-neutral-50 border border-neutral-200 flex items-center justify-between text-xs">
+          <div>
+            <p className="font-semibold text-black">Demo Credentials:</p>
+            <p className="text-[11px] text-neutral-500 font-mono mt-0.5">AI campuspulse · AIcampuspulse</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleFillCredentials}
+            className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-black text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+          >
+            Auto Fill
+          </button>
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-400">
           <span className="flex items-center gap-1">
             <ShieldCheck className="h-3.5 w-3.5 text-neutral-500" />
             256-bit Encrypted
