@@ -135,7 +135,7 @@ export async function createStudent(newStudent: {
         class_section: newStudent.section,
         parent_name: newStudent.parentName,
         parent_phone: newStudent.parentPhone,
-        preferred_language: newStudent.preferredLanguage || 'Telugu',
+        preferred_language: newStudent.preferredLanguage || 'English',
         historical_attendance_pct: formattedPct,
         location: newStudent.location || 'Visakhapatnam',
       };
@@ -198,7 +198,7 @@ export async function bulkCreateStudents(studentsList: Array<{
       gender: s.gender || inferGenderFromName(s.name),
       parent_name: s.parentName,
       parent_phone: s.parentPhone,
-      preferred_language: 'Telugu',
+      preferred_language: 'English',
       historical_attendance_pct: s.attendancePercentage,
       location: 'Visakhapatnam',
     }));

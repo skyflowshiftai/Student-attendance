@@ -42,7 +42,7 @@ export function StudentsPage() {
     gender: 'male',
     parentName: '',
     parentPhone: '',
-    preferredLanguage: 'Telugu',
+    preferredLanguage: 'English',
     attendancePercentage: 88,
     location: '',
   });
@@ -123,7 +123,7 @@ export function StudentsPage() {
           gender: 'male',
           parentName: '',
           parentPhone: '',
-          preferredLanguage: 'Telugu',
+          preferredLanguage: 'English',
           attendancePercentage: 88,
           location: '',
         });

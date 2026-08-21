@@ -38,7 +38,7 @@ export function SettingsPage() {
       retellApiKey: 'f6ca7126-af42-4d10-9034-9a8a1ff30e1a',
       retellAgentId: 'e8afec72-129a-467c-9d42-6f45c267edff',
       retellFromNumber: '+1 (949) 738-5095',
-      preferredLanguage: 'Telugu',
+      preferredLanguage: 'English',
       autoCallTrigger: true,
       consecutiveAbsenceThreshold: 3,
       riskThresholdPct: 75,
@@ -248,16 +248,14 @@ export function SettingsPage() {
 
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                  Default Regional Language
+                  Institutional Operating Language
                 </label>
                 <select
                   value={settings.preferredLanguage}
                   onChange={(e) => setSettings({ ...settings, preferredLanguage: e.target.value })}
                   className="w-full h-10 px-3 text-sm font-medium rounded-lg border border-border bg-background focus-ring cursor-pointer"
                 >
-                  <option value="Telugu">Telugu (Regional Andhra Pradesh / Telangana)</option>
-                  <option value="English">Indian English</option>
-                  <option value="Hindi">Hindi</option>
+                  <option value="English">English (Standard Institutional)</option>
                 </select>
               </div>
 

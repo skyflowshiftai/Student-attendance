@@ -84,7 +84,7 @@ export function AIOperationsPage() {
           </div>
           <div>
             <span className="text-[10px] uppercase tracking-wider text-neutral-400 block font-semibold">Language</span>
-            <span className="font-bold text-black">Indian English / Telugu</span>
+            <span className="font-bold text-black">English (Standard)</span>
           </div>
         </div>
       </div>

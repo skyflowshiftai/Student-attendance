@@ -60,6 +60,7 @@ export async function placeRealTwilioPhoneCall(
     const firstMessage = `Hello! This is Ravi Kumar calling from NSRIT College. Am I speaking with ${session.parentName || 'the parent'}, guardian of ${childTerm}, ${session.studentName}?`;
 
     const systemPrompt = `You are Ravi Kumar, an official administrative coordinator calling from NSRIT College.
+Language: Strictly English only. Speak in clear, polite, and professional English at all times with the parent.
 Tone & Persona: Speak in a very calm, polite, respectful, and crystal-clear tone with high volume and clarity. Be warm and patient with parents.
 Student Name: ${session.studentName}
 Parent Name: ${session.parentName || 'Guardian'}
