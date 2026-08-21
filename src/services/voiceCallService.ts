@@ -8,6 +8,7 @@ export interface LiveVoiceCallSession {
   rollNumber: string;
   parentName: string;
   parentPhone: string;
+  gender?: 'male' | 'female' | 'other';
 }
 
 function formatToE164(phone: string): string {
@@ -27,8 +28,7 @@ const VAPI_PHONE_NUMBER_ID = import.meta.env.VITE_VAPI_PHONE_NUMBER_ID || "b9216
 const VAPI_ASSISTANT_ID = import.meta.env.VITE_VAPI_ASSISTANT_ID || "e8afec72-129a-467c-9d42-6f45c267edff";
 
 /**
- * Places a Real-World Outbound Telephony Call to a Parent.
- * Uses Secure Backend Gateway (:3001) with graceful direct Vapi fallback.
+ * Places a Real-World Outbound Telephony Call to a Parent with Gender-Aware Personalization.
  */
 export async function placeRealTwilioPhoneCall(
   session: LiveVoiceCallSession
@@ -39,6 +39,10 @@ export async function placeRealTwilioPhoneCall(
     if (!formattedTo || formattedTo.length < 12) {
       return { success: false, error: `Invalid phone number: ${session.parentPhone}` };
     }
+
+    const childTerm = session.gender === 'female' ? 'your daughter' : session.gender === 'male' ? 'your son' : 'your child';
+    const pronounSubject = session.gender === 'female' ? 'she' : session.gender === 'male' ? 'he' : 'they';
+    const firstMessage = `Hello! This is Ravi Kumar calling from NSRIT College. Am I speaking with ${session.parentName || 'the parent'}, guardian of ${childTerm}, ${session.studentName}?`;
 
     // 1. Try Secure Backend Gateway first
     try {
@@ -51,6 +55,7 @@ export async function placeRealTwilioPhoneCall(
           studentName: session.studentName,
           parentName: session.parentName,
           parentPhone: formattedTo,
+          gender: session.gender,
         }),
       });
 
@@ -65,7 +70,7 @@ export async function placeRealTwilioPhoneCall(
       console.info('[TELEPHONY] Gateway offline, switching to direct Vapi channel...');
     }
 
-    // 2. Direct Vapi Channel (Reliable Fallback)
+    // 2. Direct Vapi Channel (Gender-Aware Fallback)
     const res = await fetch("https://api.vapi.ai/call/phone", {
       method: "POST",
       headers: {
@@ -80,7 +85,13 @@ export async function placeRealTwilioPhoneCall(
           name: session.parentName || "Guardian",
         },
         assistantOverrides: {
-          firstMessage: `Hello! This is Ravi Kumar calling from NSRIT College. Am I speaking with ${session.parentName || 'the parent'}, guardian of ${session.studentName}?`,
+          firstMessage,
+          variableValues: {
+            student_name: session.studentName,
+            student_gender: session.gender || 'male',
+            child_term: childTerm,
+            pronoun: pronounSubject,
+          },
         },
       }),
     });
@@ -96,11 +107,12 @@ export async function placeRealTwilioPhoneCall(
           status: 'in-progress',
           duration_seconds: 0,
           duration: 0,
-          transcript: `[Call initiated] Ravi Kumar → ${session.parentName} (${formattedTo}) for ${session.studentName}`,
+          transcript: `[Call initiated] Ravi Kumar → ${session.parentName} (${formattedTo}) for ${childTerm} ${session.studentName}`,
           analysis: {
             vapi_call_id: data.id,
             parent_phone: formattedTo,
             student_name: session.studentName,
+            student_gender: session.gender || 'male',
             parent_name: session.parentName,
           },
         });

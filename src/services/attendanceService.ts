@@ -99,7 +99,7 @@ export async function submitAttendance(
       const absentIds = absentRecords.map((a) => a.studentId);
       const { data: absentStudentDetails } = await supabase
         .from('students')
-        .select('id, student_id, name, roll_number, parent_name, parent_phone, historical_attendance_pct')
+        .select('id, student_id, name, roll_number, parent_name, parent_phone, gender, historical_attendance_pct')
         .in('id', absentIds);
 
       const caseResults = await createAbsenceCases(
@@ -127,6 +127,7 @@ export async function submitAttendance(
               rollNumber: studentDetail.roll_number || '',
               parentName: studentDetail.parent_name || 'Guardian',
               parentPhone: studentDetail.parent_phone || '',
+              gender: studentDetail.gender,
             });
           } catch (callErr) {
             console.warn('Call trigger notice:', callErr);

@@ -31,6 +31,7 @@ export function AIOperationsPage() {
         rollNumber: absenceCase.student?.rollNumber || '',
         parentName,
         parentPhone,
+        gender: absenceCase.student?.gender,
       });
 
       if (result.success) {

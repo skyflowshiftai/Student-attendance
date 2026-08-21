@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Student } from '@/types';
 import { Search, MapPin, Phone, User, Filter, Eye, AlertTriangle, CheckCircle2, ShieldAlert, UserPlus, Sparkles, Building, Languages, Upload, Download, Trash2, PhoneCall } from 'lucide-react';
@@ -23,11 +23,23 @@ export function StudentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    rollNumber: string;
+    department: string;
+    section: string;
+    gender: 'male' | 'female';
+    parentName: string;
+    parentPhone: string;
+    preferredLanguage: string;
+    attendancePercentage: number;
+    location: string;
+  }>({
     name: '',
     rollNumber: '',
     department: 'Computer Science & Engineering',
     section: 'CSE-A',
+    gender: 'male',
     parentName: '',
     parentPhone: '',
     preferredLanguage: 'Telugu',
@@ -91,6 +103,7 @@ export function StudentsPage() {
         rollNumber: formData.rollNumber.toUpperCase(),
         department: formData.department,
         section: formData.section,
+        gender: formData.gender,
         parentName: formData.parentName || 'Guardian',
         parentPhone: cleanPhone,
         preferredLanguage: formData.preferredLanguage,
@@ -100,13 +113,14 @@ export function StudentsPage() {
 
       if (created) {
         setStudents((prev) => [created, ...prev]);
-        setToastMessage(`Student ${created.name} (${created.rollNumber}) added successfully!`);
+        setToastMessage(`Student ${created.name} (${created.gender === 'female' ? 'Daughter' : 'Son'}) registered successfully!`);
         setIsAddModalOpen(false);
         setFormData({
           name: '',
           rollNumber: '',
           department: 'Computer Science & Engineering',
           section: 'CSE-A',
+          gender: 'male',
           parentName: '',
           parentPhone: '',
           preferredLanguage: 'Telugu',
@@ -133,20 +147,29 @@ export function StudentsPage() {
 
   const handleQuickSeed = async () => {
     setIsSubmitting(true);
-    const demoBatch = [
-      { name: 'K. Sai Krishna', rollNumber: '23CSE012', parentName: 'K. Satyanarayana', parentPhone: '+916303318876', attendancePercentage: 68, location: 'Gajuwaka, Vizag' },
-      { name: 'P. Sneha Reddy', rollNumber: '23CSE024', parentName: 'P. Venkat Reddy', parentPhone: '+916303318876', attendancePercentage: 92, location: 'MVP Colony, Vizag' },
-      { name: 'M. Arjun Varma', rollNumber: '23CSE035', parentName: 'M. Ramaraju', parentPhone: '+916303318876', attendancePercentage: 71, location: 'Pendurthi, Vizag' },
-      { name: 'T. Kavya Sri', rollNumber: '23CSE041', parentName: 'T. Apparao', parentPhone: '+916303318876', attendancePercentage: 86, location: 'NAD Junction, Vizag' },
-      { name: 'B. Ravi Teja', rollNumber: '23CSE048', parentName: 'B. Somaraju', parentPhone: '+916303318876', attendancePercentage: 64, location: 'Simhachalam, Vizag' },
+    const demoBatch: Array<{
+      name: string;
+      rollNumber: string;
+      department: string;
+      section: string;
+      parentName: string;
+      parentPhone: string;
+      gender: 'male' | 'female';
+      attendancePercentage: number;
+    }> = [
+      { name: 'K. Sai Krishna', rollNumber: '23CSE012', department: 'Computer Science & Engineering', section: 'CSE-A', parentName: 'K. Satyanarayana', parentPhone: '+916303318876', gender: 'male', attendancePercentage: 68 },
+      { name: 'P. Sneha Reddy', rollNumber: '23CSE024', department: 'Computer Science & Engineering', section: 'CSE-A', parentName: 'P. Venkat Reddy', parentPhone: '+916303318876', gender: 'female', attendancePercentage: 92 },
+      { name: 'M. Arjun Varma', rollNumber: '23CSE035', department: 'Computer Science & Engineering', section: 'CSE-A', parentName: 'M. Ramaraju', parentPhone: '+916303318876', gender: 'male', attendancePercentage: 71 },
+      { name: 'T. Kavya Sri', rollNumber: '23CSE041', department: 'Computer Science & Engineering', section: 'CSE-A', parentName: 'T. Apparao', parentPhone: '+916303318876', gender: 'female', attendancePercentage: 86 },
+      { name: 'B. Ravi Teja', rollNumber: '23CSE048', department: 'Computer Science & Engineering', section: 'CSE-A', parentName: 'B. Somaraju', parentPhone: '+916303318876', gender: 'male', attendancePercentage: 64 },
     ];
 
-    const res = await bulkCreateStudents(demoBatch);
-    if (res.success) {
-      setToastMessage(`Successfully seeded ${res.count} classroom students!`);
+    const ok = await bulkCreateStudents(demoBatch);
+    if (ok) {
+      setToastMessage(`Successfully seeded 5 classroom students (3 Male, 2 Female)!`);
       await loadStudents();
     } else {
-      setToastMessage(`Error: ${res.error}`);
+      setToastMessage(`Failed to seed roster.`);
     }
     setIsSubmitting(false);
   };
@@ -161,10 +184,11 @@ export function StudentsPage() {
         rollNumber: student.rollNumber,
         parentName: student.parentName || 'Guardian',
         parentPhone: student.parentPhone || '+916303318876',
+        gender: student.gender,
       });
 
       if (res.success) {
-        setToastMessage(`📞 Outbound Call Placed to ${student.parentName} (${student.parentPhone}) via Ravi Kumar!`);
+        setToastMessage(`📞 Outbound Call Placed to ${student.parentName} (${student.parentPhone}) for ${student.gender === 'female' ? 'daughter' : 'son'} ${student.name}!`);
       } else {
         setToastMessage(`Call Notice: ${res.error}`);
       }
@@ -191,7 +215,7 @@ export function StudentsPage() {
             Students Directory
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            Comprehensive roster of enrolled students, residential locations, and parent contacts.
+            Roster of enrolled students, gender classification, and verified parent contacts.
           </p>
         </div>
 
@@ -267,6 +291,7 @@ export function StudentsPage() {
               <thead>
                 <tr className="border-b border-neutral-200 bg-neutral-50">
                   <th className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">Student</th>
+                  <th className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">Gender</th>
                   <th className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">Roll Number</th>
                   <th className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">Location / Area</th>
                   <th className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">Parent Contact</th>
@@ -278,68 +303,75 @@ export function StudentsPage() {
                 {filteredStudents.length > 0 ? (
                   filteredStudents.map((student) => {
                     const isAtRisk = student.attendancePercentage < 75;
-                    const initials = student.name.split(' ').map(n => n[0]).join('').slice(0, 2);
+                    const initials = student.name.split(' ').map((n) => n[0]).join('').slice(0, 2);
+                    const isFemale = student.gender === 'female';
 
                     return (
-                      <tr key={student.id} className="hover:bg-neutral-50/60 transition-colors">
-                        <td className="px-4 py-3.5">
+                      <tr
+                        key={student.id}
+                        className="hover:bg-neutral-50/70 transition-colors duration-150 cursor-pointer"
+                        onClick={() => setSelectedStudent(student)}
+                      >
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white bg-black">
+                            <div className="w-8 h-8 rounded-full bg-black text-white text-xs font-bold flex items-center justify-center shrink-0">
                               {initials}
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-black">{student.name}</p>
-                              <p className="text-xs text-neutral-500">{student.section || 'CSE-A'}</p>
+                              <p className="text-xs text-neutral-500">{student.section} · {student.department}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-sm font-mono text-neutral-600 font-medium">
+                        <td className="px-4 py-3">
+                          <span className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold border',
+                            isFemale
+                              ? 'bg-neutral-100 text-black border-neutral-300'
+                              : 'bg-neutral-50 text-neutral-700 border-neutral-200'
+                          )}>
+                            {isFemale ? 'Female (Daughter)' : 'Male (Son)'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-black">
                           {student.rollNumber}
                         </td>
-                        <td className="px-4 py-3.5 text-sm text-neutral-600">
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
-                            <span>{student.location || 'Visakhapatnam'}</span>
-                          </div>
+                        <td className="px-4 py-3 text-xs text-neutral-600">
+                          {student.location || 'Visakhapatnam'}
                         </td>
-                        <td className="px-4 py-3.5 text-sm">
-                          <div>
-                            <p className="font-medium text-black">{student.parentName || 'Guardian'}</p>
-                            <div className="flex items-center gap-1 text-xs text-neutral-500 font-mono">
-                              <Phone className="h-3 w-3" />
-                              <span>{student.parentPhone || '—'}</span>
-                            </div>
-                          </div>
+                        <td className="px-4 py-3">
+                          <p className="text-xs font-medium text-black">{student.parentName || '—'}</p>
+                          <p className="text-[11px] font-mono text-neutral-500">{student.parentPhone || '—'}</p>
                         </td>
-                        <td className="px-4 py-3.5 text-sm">
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-16 h-2 bg-neutral-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-black rounded-full"
-                                style={{ width: `${Math.min(student.attendancePercentage, 100)}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-semibold text-black">
+                            <span className={cn('text-sm font-bold', isAtRisk ? 'text-black font-extrabold' : 'text-neutral-700')}>
                               {student.attendancePercentage}%
                             </span>
+                            {isAtRisk && (
+                              <span className="text-[10px] bg-black text-white px-1.5 py-0.2 rounded font-bold uppercase">
+                                At Risk
+                              </span>
+                            )}
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-right">
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
                               onClick={() => handleInstantCall(student)}
-                              className="text-black hover:bg-neutral-100"
-                              title="Trigger Real Phone Call"
+                              className="h-8 gap-1 text-xs"
+                              title="Trigger Real Phone Call to Parent"
                             >
-                              <PhoneCall className="h-3.5 w-3.5" />
+                              <PhoneCall className="h-3 w-3" />
+                              Call
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => setSelectedStudent(student)}
-                              className="text-black hover:bg-neutral-100"
+                              className="h-8 w-8 p-0"
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
@@ -347,7 +379,7 @@ export function StudentsPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(student.id, student.name)}
-                              className="text-neutral-500 hover:text-black hover:bg-neutral-100"
+                              className="h-8 w-8 p-0 text-neutral-400 hover:text-black hover:bg-neutral-100"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -358,8 +390,8 @@ export function StudentsPage() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-neutral-500 text-sm">
-                      No students found matching your criteria.
+                    <td colSpan={7} className="text-center py-12 text-neutral-500 text-sm">
+                      No students found. Click "Add Student" or "Quick Roster Seed" to populate.
                     </td>
                   </tr>
                 )}
@@ -383,12 +415,26 @@ export function StudentsPage() {
               <input
                 type="text"
                 required
-                placeholder="e.g. Rahul Kumar"
+                placeholder="e.g. Sneha Reddy"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full h-10 px-3 mt-1 text-sm rounded-lg border border-neutral-200 bg-white text-black focus-ring"
               />
             </div>
+            <div>
+              <label className="text-xs font-semibold text-neutral-500 uppercase">Gender / Salutation *</label>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'male' | 'female' })}
+                className="w-full h-10 px-3 mt-1 text-sm rounded-lg border border-neutral-200 bg-white text-black focus-ring cursor-pointer"
+              >
+                <option value="male">Male (Son / He / Him)</option>
+                <option value="female">Female (Daughter / She / Her)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-neutral-500 uppercase">Roll Number *</label>
               <input
@@ -400,22 +446,22 @@ export function StudentsPage() {
                 className="w-full h-10 px-3 mt-1 text-sm rounded-lg border border-neutral-200 bg-white text-black focus-ring font-mono"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-neutral-500 uppercase">Parent / Guardian Name *</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Lakshmi Devi"
+                placeholder="e.g. Venkat Reddy"
                 value={formData.parentName}
                 onChange={(e) => setFormData({ ...formData, parentName: e.target.value })}
                 className="w-full h-10 px-3 mt-1 text-sm rounded-lg border border-neutral-200 bg-white text-black focus-ring"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-neutral-500 uppercase">Parent Phone Number *</label>
+              <label className="text-xs font-semibold text-neutral-500 uppercase">Parent Mobile Number *</label>
               <input
                 type="tel"
                 required
@@ -425,17 +471,26 @@ export function StudentsPage() {
                 className="w-full h-10 px-3 mt-1 text-sm rounded-lg border border-neutral-200 bg-white text-black focus-ring font-mono"
               />
             </div>
+            <div>
+              <label className="text-xs font-semibold text-neutral-500 uppercase">Location / Residential Area</label>
+              <input
+                type="text"
+                placeholder="e.g. MVP Colony, Vizag"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full h-10 px-3 mt-1 text-sm rounded-lg border border-neutral-200 bg-white text-black focus-ring"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-neutral-500 uppercase">Location / Area</label>
+              <label className="text-xs font-semibold text-neutral-500 uppercase">Class / Section</label>
               <input
                 type="text"
-                placeholder="e.g. Gajuwaka, Vizag"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full h-10 px-3 mt-1 text-sm rounded-lg border border-neutral-200 bg-white text-black focus-ring"
+                disabled
+                value="CSE-A (Computer Science)"
+                className="w-full h-10 px-3 mt-1 text-sm rounded-lg border border-neutral-200 bg-neutral-100 text-neutral-500 font-medium"
               />
             </div>
             <div>
@@ -477,7 +532,9 @@ export function StudentsPage() {
               </div>
               <div>
                 <h3 className="font-bold text-black text-base">{selectedStudent.name}</h3>
-                <p className="text-xs font-mono text-neutral-500">{selectedStudent.rollNumber} · {selectedStudent.section || 'CSE-A'}</p>
+                <p className="text-xs font-mono text-neutral-500">
+                  {selectedStudent.rollNumber} · {selectedStudent.section || 'CSE-A'} · {selectedStudent.gender === 'female' ? 'Female (Daughter)' : 'Male (Son)'}
+                </p>
               </div>
             </div>
 
@@ -487,9 +544,9 @@ export function StudentsPage() {
                 <p className="text-base font-bold text-black mt-0.5">{selectedStudent.attendancePercentage}%</p>
               </div>
               <div className="p-2.5 rounded-lg border border-neutral-200 bg-white">
-                <span className="text-neutral-500">Risk Status</span>
+                <span className="text-neutral-500">AI Pronoun Context</span>
                 <p className="text-base font-bold text-black mt-0.5">
-                  {selectedStudent.attendancePercentage < 75 ? 'High Risk' : 'Normal'}
+                  {selectedStudent.gender === 'female' ? 'She / Her (Daughter)' : 'He / Him (Son)'}
                 </p>
               </div>
             </div>
@@ -508,7 +565,7 @@ export function StudentsPage() {
                 <span className="font-medium text-black">{selectedStudent.location || 'Visakhapatnam'}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-neutral-500">Voice Assistant:</span>
+                <span className="text-neutral-500">Voice Telephony Engine:</span>
                 <span className="font-medium text-black font-semibold">Ravi Kumar (Cartesia Neural en-IN)</span>
               </div>
             </div>

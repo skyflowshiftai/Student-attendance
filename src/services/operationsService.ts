@@ -43,7 +43,7 @@ export async function getActiveAbsenceCases(): Promise<AbsenceCase[]> {
         .from('absence_cases')
         .select(`
           id, date, status, reason, reason_category, risk_level, consecutive_absences, follow_up_required, ai_recommendation,
-          students(id, student_id, name, roll_number, class_section, historical_attendance_pct, parent_name, parent_phone, location)
+          students(id, student_id, name, roll_number, class_section, gender, historical_attendance_pct, parent_name, parent_phone, location)
         `)
         .eq('date', today);
 
@@ -61,6 +61,7 @@ export async function getActiveAbsenceCases(): Promise<AbsenceCase[]> {
               name: student.name || '—',
               rollNumber: student.roll_number || '—',
               section: student.class_section || '—',
+              gender: student.gender || 'male',
               attendancePercentage: Number(student.historical_attendance_pct) || 0,
               parentName: student.parent_name || '—',
               parentPhone: student.parent_phone || '—',

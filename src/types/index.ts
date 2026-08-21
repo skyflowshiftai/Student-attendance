@@ -9,6 +9,7 @@ export interface Student {
   status: 'present' | 'absent';
   parentName?: string;
   parentPhone?: string;
+  gender?: 'male' | 'female' | 'other';
   location?: string;
   preferredLanguage?: string;
 }
@@ -83,6 +84,7 @@ export interface AbsenceCase {
     attendancePercentage: number;
     parentName?: string;
     parentPhone?: string;
+    gender?: 'male' | 'female' | 'other';
     location?: string;
   };
   absencePattern: string;
