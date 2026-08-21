@@ -20,6 +20,16 @@ function formatToE164(phone) {
   return clean;
 }
 
+const CALM_POLITE_MALE_VOICE = {
+  provider: '11labs',
+  voiceId: 'bIHbv24MWmeRgasZH58o', // Will - Calm, warm, polite & resonant
+  model: 'eleven_turbo_v2_5',
+  stability: 0.75,
+  similarityBoost: 0.85,
+  style: 0.15,
+  useSpeakerBoost: true, // Maximizes volume and clarity over cellular telephony
+};
+
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -32,7 +42,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ status: 'ok', engine: 'Ravi Kumar AI', gateway: 'active' }));
+    return res.end(JSON.stringify({ status: 'ok', engine: 'Ravi Kumar AI (High Volume)', gateway: 'active' }));
   }
 
   if (req.url === '/api/call/outbound' && req.method === 'POST') {
@@ -54,6 +64,13 @@ const server = http.createServer(async (req, res) => {
 
         const firstMessage = `Hello! This is Ravi Kumar calling from NSRIT College. Am I speaking with ${parentName || 'the parent'}, guardian of ${childTerm}, ${studentName}?`;
 
+        const systemPrompt = `You are Ravi Kumar, an official administrative coordinator calling from NSRIT College.
+Tone & Persona: Speak in a very calm, polite, respectful, and crystal-clear tone with high volume and clarity. Be warm and patient with parents.
+Student Name: ${studentName}
+Parent Name: ${parentName || 'Guardian'}
+Gender Reference: Refer to ${studentName} as ${childTerm} (${pronoun}).
+Goal: Politely ask why ${studentName} was marked absent from college today, listen attentively, record their stated reason, and politely thank them before ending the call.`;
+
         const vapiRes = await fetch('https://api.vapi.ai/call/phone', {
           method: 'POST',
           headers: {
@@ -69,6 +86,17 @@ const server = http.createServer(async (req, res) => {
             },
             assistantOverrides: {
               firstMessage,
+              voice: CALM_POLITE_MALE_VOICE,
+              model: {
+                provider: 'openai',
+                model: 'gpt-4o-mini',
+                messages: [
+                  {
+                    role: 'system',
+                    content: systemPrompt,
+                  },
+                ],
+              },
               variableValues: {
                 student_name: studentName,
                 student_gender: gender || 'male',
@@ -90,7 +118,7 @@ const server = http.createServer(async (req, res) => {
               status: 'in-progress',
               duration_seconds: 0,
               duration: 0,
-              transcript: `[Call initiated] Ravi Kumar → ${parentName} (${formattedPhone}) for ${childTerm} ${studentName}`,
+              transcript: `[Call initiated] Ravi Kumar (High Volume / Calm Male) → ${parentName} (${formattedPhone}) for ${childTerm} ${studentName}`,
               analysis: {
                 vapi_call_id: vapiData.id,
                 parent_phone: formattedPhone,

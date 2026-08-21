@@ -27,8 +27,23 @@ const VAPI_API_KEY = import.meta.env.VITE_VAPI_API_KEY || "f6ca7126-af42-4d10-90
 const VAPI_PHONE_NUMBER_ID = import.meta.env.VITE_VAPI_PHONE_NUMBER_ID || "b9216d31-f97b-4df3-a8b2-4cde8ce76aa9";
 const VAPI_ASSISTANT_ID = import.meta.env.VITE_VAPI_ASSISTANT_ID || "e8afec72-129a-467c-9d42-6f45c267edff";
 
+// Calm, polite, high-clarity & boosted volume male voice configuration
+const CALM_POLITE_MALE_VOICE = {
+  provider: "11labs",
+  voiceId: "bIHbv24MWmeRgasZH58o", // Will - Calm, warm, polite & resonant
+  model: "eleven_turbo_v2_5",
+  stability: 0.75,
+  similarityBoost: 0.85,
+  style: 0.15,
+  useSpeakerBoost: true, // Maximizes volume and clarity over cellular telephony
+};
+
 /**
- * Places a Real-World Outbound Telephony Call to a Parent with Gender-Aware Personalization.
+ * Places a Real-World Outbound Telephony Call to a Parent.
+ * Features:
+ * - High volume & boosted phone clarity (useSpeakerBoost: true)
+ * - Calm, polite, respectful male tone (Ravi Kumar)
+ * - Dynamic gender relationship (son / daughter)
  */
 export async function placeRealTwilioPhoneCall(
   session: LiveVoiceCallSession
@@ -43,6 +58,13 @@ export async function placeRealTwilioPhoneCall(
     const childTerm = session.gender === 'female' ? 'your daughter' : session.gender === 'male' ? 'your son' : 'your child';
     const pronounSubject = session.gender === 'female' ? 'she' : session.gender === 'male' ? 'he' : 'they';
     const firstMessage = `Hello! This is Ravi Kumar calling from NSRIT College. Am I speaking with ${session.parentName || 'the parent'}, guardian of ${childTerm}, ${session.studentName}?`;
+
+    const systemPrompt = `You are Ravi Kumar, an official administrative coordinator calling from NSRIT College.
+Tone & Persona: Speak in a very calm, polite, respectful, and crystal-clear tone with high volume and clarity. Be warm and patient with parents.
+Student Name: ${session.studentName}
+Parent Name: ${session.parentName || 'Guardian'}
+Gender Reference: Refer to ${session.studentName} as ${childTerm} (${pronounSubject}).
+Goal: Politely ask why ${session.studentName} was marked absent from college today, listen attentively, record their stated reason, and politely thank them before ending the call.`;
 
     // 1. Try Secure Backend Gateway first
     try {
@@ -70,7 +92,7 @@ export async function placeRealTwilioPhoneCall(
       console.info('[TELEPHONY] Gateway offline, switching to direct Vapi channel...');
     }
 
-    // 2. Direct Vapi Channel (Gender-Aware Fallback)
+    // 2. Direct Vapi Channel (Boosted Volume & Polite Voice)
     const res = await fetch("https://api.vapi.ai/call/phone", {
       method: "POST",
       headers: {
@@ -86,6 +108,17 @@ export async function placeRealTwilioPhoneCall(
         },
         assistantOverrides: {
           firstMessage,
+          voice: CALM_POLITE_MALE_VOICE,
+          model: {
+            provider: "openai",
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: systemPrompt,
+              },
+            ],
+          },
           variableValues: {
             student_name: session.studentName,
             student_gender: session.gender || 'male',
@@ -107,7 +140,7 @@ export async function placeRealTwilioPhoneCall(
           status: 'in-progress',
           duration_seconds: 0,
           duration: 0,
-          transcript: `[Call initiated] Ravi Kumar → ${session.parentName} (${formattedTo}) for ${childTerm} ${session.studentName}`,
+          transcript: `[Call initiated] Ravi Kumar (High Volume / Calm Male) → ${session.parentName} (${formattedTo}) for ${childTerm} ${session.studentName}`,
           analysis: {
             vapi_call_id: data.id,
             parent_phone: formattedTo,
