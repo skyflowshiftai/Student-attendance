@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Production Website
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://jskmwwyabdmlzfetqbfx.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impza213d3lhYmRtbHpmZXRxYmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyMzQwNzEsImV4cCI6MjEwMjgxMDA3MX0.vV78c-4cv1MpLYxM34AUFRZfersB0jl7mHY2AYdGh2Y' }}
+          VITE_VAPI_API_KEY: ${{ secrets.VITE_VAPI_API_KEY || 'f6ca7126-af42-4d10-9034-9a8a1ff30e1a' }}
+          VITE_VAPI_PHONE_NUMBER_ID: ${{ secrets.VITE_VAPI_PHONE_NUMBER_ID || 'b9216d31-f97b-4df3-a8b2-4cde8ce76aa9' }}
+          VITE_VAPI_ASSISTANT_ID: ${{ secrets.VITE_VAPI_ASSISTANT_ID || 'e8afec72-129a-467c-9d42-6f45c267edff' }}
+        run: npm run build
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
