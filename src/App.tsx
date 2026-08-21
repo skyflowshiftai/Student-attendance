@@ -13,7 +13,9 @@ import { PageId } from '@/types';
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
-      const auth = localStorage.getItem('campuspulse_auth');
+      const authLocal = localStorage.getItem('campuspulse_auth');
+      const authSession = sessionStorage.getItem('campuspulse_auth');
+      const auth = authLocal || authSession;
       return Boolean(auth && JSON.parse(auth).authenticated);
     } catch {
       return false;
@@ -41,6 +43,7 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('campuspulse_auth');
+    sessionStorage.removeItem('campuspulse_auth');
     setIsAuthenticated(false);
   };
 
