@@ -2,7 +2,6 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Student } from '@/types';
 import { AttendanceStatusToggle } from './AttendanceStatusToggle';
-import { Badge } from '@/components/ui/Badge';
 import { AlertCircle } from 'lucide-react';
 
 interface AttendanceTableProps {
@@ -20,6 +19,9 @@ export function AttendanceTable({ students, onToggleStatus }: AttendanceTablePro
             <tr className="border-b border-neutral-200 bg-neutral-50">
               <th className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">
                 Student
+              </th>
+              <th className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">
+                Gender
               </th>
               <th className="text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider px-4 py-3">
                 Roll Number
@@ -40,8 +42,8 @@ export function AttendanceTable({ students, onToggleStatus }: AttendanceTablePro
                 .join('')
                 .slice(0, 2);
 
-              const isLowAttendance = student.attendancePercentage < 75;
               const isAbsent = student.status === 'absent';
+              const isFemale = student.gender === 'female';
 
               return (
                 <tr
@@ -82,6 +84,16 @@ export function AttendanceTable({ students, onToggleStatus }: AttendanceTablePro
                     </div>
                   </td>
                   <td className="px-4 py-3.5">
+                    <span className={cn(
+                      'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border',
+                      isFemale
+                        ? 'bg-neutral-100 text-black border-neutral-300'
+                        : 'bg-neutral-50 text-neutral-600 border-neutral-200'
+                    )}>
+                      {isFemale ? 'Girl (Daughter)' : 'Boy (Son)'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5">
                     <span className="text-sm font-mono text-neutral-600 font-medium">
                       {student.rollNumber}
                     </span>
@@ -102,8 +114,8 @@ export function AttendanceTable({ students, onToggleStatus }: AttendanceTablePro
                   <td className="px-4 py-3.5 text-right">
                     <AttendanceStatusToggle
                       status={student.status}
-                      onToggle={() => onToggleStatus(student.id)}
                       studentName={student.name}
+                      onToggle={() => onToggleStatus(student.id)}
                     />
                   </td>
                 </tr>
@@ -111,6 +123,33 @@ export function AttendanceTable({ students, onToggleStatus }: AttendanceTablePro
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile view */}
+      <div className="sm:hidden divide-y divide-neutral-200">
+        {students.map((student) => (
+          <div
+            key={student.id}
+            className={cn(
+              'p-4 space-y-3 transition-colors duration-150',
+              student.status === 'absent' ? 'bg-neutral-100' : ''
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-sm text-black">{student.name}</p>
+                <p className="text-xs text-neutral-500 font-mono mt-0.5">
+                  {student.rollNumber} · {student.gender === 'female' ? 'Girl' : 'Boy'}
+                </p>
+              </div>
+              <AttendanceStatusToggle
+                status={student.status}
+                studentName={student.name}
+                onToggle={() => onToggleStatus(student.id)}
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

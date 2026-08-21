@@ -7,6 +7,7 @@ interface AppShellProps {
   children: React.ReactNode;
   activePage: PageId;
   onNavigate: (page: PageId) => void;
+  onLogout?: () => void;
 }
 
 const breadcrumbMap: Record<PageId, string> = {
@@ -18,7 +19,7 @@ const breadcrumbMap: Record<PageId, string> = {
   'settings': 'System Settings',
 };
 
-export function AppShell({ children, activePage, onNavigate }: AppShellProps) {
+export function AppShell({ children, activePage, onNavigate, onLogout }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -34,6 +35,7 @@ export function AppShell({ children, activePage, onNavigate }: AppShellProps) {
         <Topbar
           onMenuClick={() => setSidebarOpen(true)}
           breadcrumb={breadcrumbMap[activePage]}
+          onLogout={onLogout}
         />
 
         <main className="flex-1 px-4 lg:px-8 py-6 lg:py-8">

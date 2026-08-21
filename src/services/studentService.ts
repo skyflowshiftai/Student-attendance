@@ -29,21 +29,43 @@ export async function fetchStudents(
       const { data, error } = await query;
 
       if (!error && data) {
-        return data.map((s: any) => ({
-          id: s.id,
-          studentId: s.student_id,
-          name: s.name,
-          rollNumber: s.roll_number,
-          department: s.department,
-          section: s.class_section,
-          gender: s.gender || inferGenderFromName(s.name),
-          attendancePercentage: Number(s.historical_attendance_pct) || 85,
-          status: 'present' as const,
-          parentName: s.parent_name,
-          parentPhone: s.parent_phone,
-          location: s.location,
-          preferredLanguage: s.preferred_language,
-        }));
+        // Query all historical attendance rows to compute real database attendance %
+        const { data: allAttendance } = await supabase
+          .from('attendance')
+          .select('student_id, status');
+
+        const studentStatsMap = new Map<string, { total: number; present: number }>();
+        if (allAttendance) {
+          allAttendance.forEach((att: any) => {
+            const prev = studentStatsMap.get(att.student_id) || { total: 0, present: 0 };
+            prev.total += 1;
+            if (att.status === 'present') prev.present += 1;
+            studentStatsMap.set(att.student_id, prev);
+          });
+        }
+
+        return data.map((s: any) => {
+          const stats = studentStatsMap.get(s.id);
+          const computedPct = stats && stats.total > 0
+            ? Math.round((stats.present / stats.total) * 100)
+            : (Number(s.historical_attendance_pct) || 85);
+
+          return {
+            id: s.id,
+            studentId: s.student_id,
+            name: s.name,
+            rollNumber: s.roll_number,
+            department: s.department,
+            section: s.class_section,
+            gender: s.gender || inferGenderFromName(s.name),
+            attendancePercentage: computedPct,
+            status: 'present' as const,
+            parentName: s.parent_name,
+            parentPhone: s.parent_phone,
+            location: s.location,
+            preferredLanguage: s.preferred_language,
+          };
+        });
       }
     } catch (err) {
       console.warn('Failed to fetch students from Supabase:', err);

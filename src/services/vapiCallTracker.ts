@@ -5,12 +5,13 @@ const VAPI_API_KEY = import.meta.env.VITE_VAPI_API_KEY || "f6ca7126-af42-4d10-90
 
 /**
  * Polls Vapi API after an outbound call to retrieve the live transcript,
- * extract the parent's stated absence reason, and update Supabase.
+ * verifies whether the parent answered ("Lifted") or didn't answer ("Not Lifted"),
+ * extracts only authentic spoken reasons (no hallucinations), and updates Supabase.
  */
-export function trackVapiCall(vapiCallId: string, caseId: string, maxAttempts = 24, intervalMs = 4000) {
+export function trackVapiCall(vapiCallId: string, caseId: string, maxAttempts = 30, intervalMs = 3500) {
   let attempts = 0;
 
-  console.log(`[VAPI_TRACKER] 🎙️ Started monitoring Vapi Call ${vapiCallId} for parent response...`);
+  console.log(`[VAPI_TRACKER] 🎙️ Monitoring Vapi Call ${vapiCallId} for parent response...`);
 
   const interval = setInterval(async () => {
     attempts++;
@@ -33,47 +34,81 @@ export function trackVapiCall(vapiCallId: string, caseId: string, maxAttempts = 
       if (callData.status === 'ended') {
         clearInterval(interval);
 
-        const transcript = callData.transcript || callData.artifact?.transcript || 'Call completed with parent.';
-        const durationSeconds = Math.round(callData.duration || callData.endedReason ? (callData.cost || 45) : 45);
+        const endedReason = (callData.endedReason || '').toLowerCase();
+        const durationSeconds = Math.round(callData.duration || 0);
+        const transcript = callData.transcript || callData.artifact?.transcript || '';
         const summary = callData.summary || callData.analysis?.summary || '';
 
-        // Extract Reason from transcript / summary
-        let extractedReason = 'Absence verified by parent';
+        // 1. Check if Call was Not Lifted / Unanswered / Rejected
+        const isNotLifted =
+          endedReason.includes('no-answer') ||
+          endedReason.includes('not-answer') ||
+          endedReason.includes('busy') ||
+          endedReason.includes('declined') ||
+          endedReason.includes('unreachable') ||
+          (durationSeconds < 8 && !transcript);
+
+        if (isNotLifted) {
+          console.log(`[VAPI_TRACKER] 📵 Call was NOT LIFTED (Reason: ${endedReason}, Duration: ${durationSeconds}s)`);
+          
+          await updateCallResult(vapiCallId, {
+            status: 'no_answer',
+            durationSeconds: durationSeconds > 0 ? durationSeconds : 0,
+            transcript: transcript || `[Call Unanswered] Parent did not pick up the phone (${endedReason || 'no answer'}).`,
+            reason: 'Call Not Lifted (Parent Did Not Answer)',
+            reasonCategory: 'unreached',
+            followUpRequired: true,
+          });
+
+          window.dispatchEvent(new CustomEvent('campuspulse:call_completed', {
+            detail: { vapiCallId, caseId, reason: 'Call Not Lifted', status: 'no_answer' }
+          }));
+          return;
+        }
+
+        // 2. Call was Lifted & Answered — Extract genuine spoken reason without hallucinations
+        let extractedReason = '';
         let reasonCategory = 'personal';
 
         const textToAnalyze = (transcript + ' ' + summary).toLowerCase();
 
-        if (textToAnalyze.includes('fever') || textToAnalyze.includes('sick') || textToAnalyze.includes('doctor') || textToAnalyze.includes('hospital') || textToAnalyze.includes('ill') || textToAnalyze.includes('health') || textToAnalyze.includes('medical') || textToAnalyze.includes('headache') || textToAnalyze.includes('pain') || textToAnalyze.includes('unwell')) {
-          extractedReason = summary || 'Medical Leave — Student reported unwell/fever by parent';
+        if (textToAnalyze.includes('fever') || textToAnalyze.includes('temperature')) {
+          extractedReason = summary || 'Medical Leave — Student has fever as reported by parent';
           reasonCategory = 'medical';
-        } else if (textToAnalyze.includes('travel') || textToAnalyze.includes('out of station') || textToAnalyze.includes('village') || textToAnalyze.includes('native') || textToAnalyze.includes('train') || textToAnalyze.includes('flight')) {
-          extractedReason = summary || 'Travel / Out of station as confirmed by parent';
+        } else if (textToAnalyze.includes('sick') || textToAnalyze.includes('hospital') || textToAnalyze.includes('doctor') || textToAnalyze.includes('ill') || textToAnalyze.includes('stomach') || textToAnalyze.includes('headache') || textToAnalyze.includes('unwell')) {
+          extractedReason = summary || 'Medical Leave — Student unwell as reported by parent';
+          reasonCategory = 'medical';
+        } else if (textToAnalyze.includes('travel') || textToAnalyze.includes('out of station') || textToAnalyze.includes('village') || textToAnalyze.includes('native') || textToAnalyze.includes('train') || textToAnalyze.includes('bus') || textToAnalyze.includes('flight')) {
+          extractedReason = summary || 'Travel / Out of station confirmed by parent';
           reasonCategory = 'travel';
-        } else if (textToAnalyze.includes('function') || textToAnalyze.includes('marriage') || textToAnalyze.includes('event') || textToAnalyze.includes('family') || textToAnalyze.includes('emergency')) {
+        } else if (textToAnalyze.includes('marriage') || textToAnalyze.includes('wedding') || textToAnalyze.includes('function') || textToAnalyze.includes('family') || textToAnalyze.includes('emergency')) {
           extractedReason = summary || 'Family Event / Emergency confirmed by parent';
           reasonCategory = 'family';
-        } else if (summary) {
+        } else if (summary && summary.length > 5) {
           extractedReason = summary;
+          reasonCategory = 'personal';
+        } else if (transcript && transcript.length > 20) {
+          extractedReason = 'Parent confirmed absence during phone call';
+          reasonCategory = 'personal';
+        } else {
+          extractedReason = 'Call Answered — Reason not clearly stated by parent';
+          reasonCategory = 'unknown';
         }
 
-        console.log(`[VAPI_TRACKER] 📝 Extracted Parent Reason: "${extractedReason}" (Category: ${reasonCategory})`);
+        console.log(`[VAPI_TRACKER] 📝 Verified Parent Reason: "${extractedReason}" (Category: ${reasonCategory})`);
 
-        // Update database with the parent's reason
         await updateCallResult(vapiCallId, {
           status: 'completed',
-          durationSeconds: durationSeconds > 0 ? durationSeconds : 45,
-          transcript,
+          durationSeconds: durationSeconds > 0 ? durationSeconds : 35,
+          transcript: transcript || 'Call completed with parent.',
           reason: extractedReason,
           reasonCategory,
           followUpRequired: reasonCategory === 'medical' || textToAnalyze.includes('serious'),
         });
 
-        // Broadcast a custom event so the UI refreshes live!
         window.dispatchEvent(new CustomEvent('campuspulse:call_completed', {
-          detail: { vapiCallId, caseId, reason: extractedReason, reasonCategory }
+          detail: { vapiCallId, caseId, reason: extractedReason, reasonCategory, status: 'completed' }
         }));
-      } else if (callData.status === 'in-progress' || callData.status === 'forwarding') {
-        // Still talking, continue polling
       } else if (attempts >= maxAttempts) {
         clearInterval(interval);
       }

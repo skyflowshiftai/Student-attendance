@@ -2,10 +2,13 @@ import { useReducer, useMemo, useCallback, useEffect, useState } from 'react';
 import { Student, AttendanceFilter, AttendanceStats, SubmissionState } from '@/types';
 import { submitAttendance, getStudentsWithAttendance, SubmitAttendanceResult } from '@/services/attendanceService';
 
+export type GenderFilter = 'all' | 'male' | 'female';
+
 type Action =
   | { type: 'TOGGLE_STATUS'; studentId: string }
   | { type: 'MARK_ALL_PRESENT' }
   | { type: 'SET_FILTER'; filter: AttendanceFilter }
+  | { type: 'SET_GENDER_FILTER'; gender: GenderFilter }
   | { type: 'SET_SEARCH'; query: string }
   | { type: 'SET_SUBMISSION_STATE'; state: SubmissionState }
   | { type: 'LOAD_STUDENTS'; students: Student[] };
@@ -13,6 +16,7 @@ type Action =
 interface State {
   students: Student[];
   filter: AttendanceFilter;
+  genderFilter: GenderFilter;
   searchQuery: string;
   submissionState: SubmissionState;
 }
@@ -31,10 +35,18 @@ function reducer(state: State, action: Action): State {
     case 'MARK_ALL_PRESENT':
       return {
         ...state,
-        students: state.students.map((s) => ({ ...s, status: 'present' as const })),
+        students: state.students.map((s) => {
+          // If gender filter is active, only mark that gender as present
+          if (state.genderFilter !== 'all' && s.gender !== state.genderFilter) {
+            return s;
+          }
+          return { ...s, status: 'present' as const };
+        }),
       };
     case 'SET_FILTER':
       return { ...state, filter: action.filter };
+    case 'SET_GENDER_FILTER':
+      return { ...state, genderFilter: action.gender };
     case 'SET_SEARCH':
       return { ...state, searchQuery: action.query };
     case 'SET_SUBMISSION_STATE':
@@ -54,6 +66,7 @@ export function useAttendance(
   const [state, dispatch] = useReducer(reducer, {
     students: [],
     filter: 'all',
+    genderFilter: 'all',
     searchQuery: '',
     submissionState: 'idle',
   });
@@ -61,7 +74,7 @@ export function useAttendance(
   const [isLoading, setIsLoading] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<SubmitAttendanceResult | null>(null);
 
-  // Load students from Supabase or mock service, preserving existing saved attendance
+  // Load students from Supabase, preserving existing saved attendance
   useEffect(() => {
     let isMounted = true;
     async function load() {
@@ -94,10 +107,17 @@ export function useAttendance(
   const filteredStudents = useMemo(() => {
     let result = state.students;
 
+    // Filter by attendance status (all, present, absent)
     if (state.filter !== 'all') {
       result = result.filter((s) => s.status === state.filter);
     }
 
+    // Filter by gender (all, male, female)
+    if (state.genderFilter !== 'all') {
+      result = result.filter((s) => (s.gender || 'male') === state.genderFilter);
+    }
+
+    // Filter by search text
     if (state.searchQuery) {
       const query = state.searchQuery.toLowerCase();
       result = result.filter(
@@ -108,7 +128,7 @@ export function useAttendance(
     }
 
     return result;
-  }, [state.students, state.filter, state.searchQuery]);
+  }, [state.students, state.filter, state.genderFilter, state.searchQuery]);
 
   const toggleStatus = useCallback((studentId: string) => {
     dispatch({ type: 'TOGGLE_STATUS', studentId });
@@ -122,33 +142,37 @@ export function useAttendance(
     dispatch({ type: 'SET_FILTER', filter });
   }, []);
 
+  const setGenderFilter = useCallback((gender: GenderFilter) => {
+    dispatch({ type: 'SET_GENDER_FILTER', gender });
+  }, []);
+
   const setSearch = useCallback((query: string) => {
     dispatch({ type: 'SET_SEARCH', query });
   }, []);
 
   const handleSubmit = useCallback(
-    async (classId: string, subject: string, attendanceDate: string) => {
+    async (classId: string, subjectId: string, submitDate: string) => {
       dispatch({ type: 'SET_SUBMISSION_STATE', state: 'submitting' });
       try {
         const result = await submitAttendance({
           classId,
-          subjectId: subject,
-          date: attendanceDate,
+          subjectId,
+          date: submitDate,
           facultyId: 'fac-1',
           attendance: state.students.map((s) => ({
-            studentId: s.id || s.studentId,
+            studentId: s.id,
             status: s.status,
           })),
         });
-
+        
         setSubmissionResult(result);
-
         if (result.success) {
           dispatch({ type: 'SET_SUBMISSION_STATE', state: 'success' });
         } else {
           dispatch({ type: 'SET_SUBMISSION_STATE', state: 'error' });
         }
       } catch (err) {
+        console.error('Submission error:', err);
         dispatch({ type: 'SET_SUBMISSION_STATE', state: 'error' });
       }
     },
@@ -164,6 +188,7 @@ export function useAttendance(
     allStudents: state.students,
     stats,
     filter: state.filter,
+    genderFilter: state.genderFilter,
     searchQuery: state.searchQuery,
     submissionState: state.submissionState,
     submissionResult,
@@ -171,6 +196,7 @@ export function useAttendance(
     toggleStatus,
     markAllPresent,
     setFilter,
+    setGenderFilter,
     setSearch,
     handleSubmit,
     resetSubmission,

@@ -7,9 +7,19 @@ import { StudentsPage } from '@/pages/StudentsPage';
 import { AttendanceHistoryPage } from '@/pages/AttendanceHistoryPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LoginPage } from '@/components/auth/LoginPage';
 import { PageId } from '@/types';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      const auth = localStorage.getItem('campuspulse_auth');
+      return Boolean(auth && JSON.parse(auth).authenticated);
+    } catch {
+      return false;
+    }
+  });
+
   const getPageFromHash = (): PageId => {
     const hash = window.location.hash.replace('#/', '').replace('#', '');
     const validPages: PageId[] = ['dashboard', 'attendance', 'ai-operations', 'students', 'history', 'settings'];
@@ -29,8 +39,17 @@ export default function App() {
     setActivePage(page);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('campuspulse_auth');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
-    <AppShell activePage={activePage} onNavigate={navigate}>
+    <AppShell activePage={activePage} onNavigate={navigate} onLogout={handleLogout}>
       <ErrorBoundary fallbackTitle={`Error Loading ${activePage}`}>
         {activePage === 'dashboard' && <DashboardPage onNavigate={navigate} />}
         {activePage === 'attendance' && (

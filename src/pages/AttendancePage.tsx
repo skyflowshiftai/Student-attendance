@@ -73,8 +73,10 @@ export function AttendancePage({ onNavigateToOperations, onNavigateToStudents }:
       <StudentSearch
         searchQuery={attendance.searchQuery}
         filter={attendance.filter}
+        genderFilter={attendance.genderFilter}
         onSearchChange={attendance.setSearch}
         onFilterChange={attendance.setFilter}
+        onGenderFilterChange={attendance.setGenderFilter}
         onMarkAllPresent={attendance.markAllPresent}
       />
 
