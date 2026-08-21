@@ -22,23 +22,22 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       const cleanUser = username.trim().toLowerCase();
       const cleanPass = password.trim();
 
-      // Fixed credentials: Name: AI campuspulse, Password: AIcampuspulse
+      // Fixed credentials: Name: AIcampuspulse, Password: AI@9999
       const isUserValid =
-        cleanUser === 'ai campuspulse' ||
         cleanUser === 'aicampuspulse' ||
+        cleanUser === 'ai campuspulse' ||
         cleanUser === 'campuspulse' ||
         cleanUser === 'admin';
 
       const isPassValid =
-        cleanPass === 'AIcampuspulse' ||
-        cleanPass.toLowerCase() === 'aicampuspulse' ||
-        cleanPass === 'AI campuspulse';
+        cleanPass === 'AI@9999' ||
+        cleanPass === 'ai@9999';
 
       if (isUserValid && isPassValid) {
         localStorage.setItem(
           'campuspulse_auth',
           JSON.stringify({
-            name: 'AI campuspulse',
+            name: 'AIcampuspulse',
             role: 'Faculty / Admin',
             authenticated: true,
             timestamp: Date.now(),
@@ -46,15 +45,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         );
         onLogin();
       } else {
-        setError('Invalid credentials. Please verify your username and password.');
+        setError('Invalid credentials. Please enter Name: AIcampuspulse and Password: AI@9999');
         setLoading(false);
       }
     }, 300);
   };
 
   const handleFillCredentials = () => {
-    setUsername('AI campuspulse');
-    setPassword('AIcampuspulse');
+    setUsername('AIcampuspulse');
+    setPassword('AI@9999');
     setError(null);
   };
 
@@ -96,7 +95,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               <input
                 type="text"
                 required
-                placeholder="AI campuspulse"
+                placeholder="AIcampuspulse"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full h-11 pl-9 pr-3 text-sm rounded-xl border border-neutral-200 bg-neutral-50 text-black placeholder:text-neutral-400 focus-ring"
@@ -113,10 +112,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
-                placeholder="AIcampuspulse"
+                placeholder="AI@9999"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-11 pl-9 pr-10 text-sm rounded-xl border border-neutral-200 bg-neutral-50 text-black placeholder:text-neutral-400 focus-ring"
+                className="w-full h-11 pl-9 pr-10 text-sm rounded-xl border border-neutral-200 bg-neutral-50 text-black placeholder:text-neutral-400 focus-ring font-mono"
               />
               <button
                 type="button"
@@ -138,7 +137,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             type="submit"
             size="lg"
             loading={loading}
-            className="w-full mt-2 h-11 bg-black text-white hover:bg-neutral-800 font-semibold"
+            className="w-full mt-2 h-11 bg-black text-white hover:bg-neutral-800 font-semibold cursor-pointer"
           >
             Authenticate & Enter
             <ArrowRight className="h-4 w-4 ml-1" />
@@ -148,8 +147,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         {/* Quick Demo Credentials Hint */}
         <div className="mt-5 p-3 rounded-xl bg-neutral-50 border border-neutral-200 flex items-center justify-between text-xs">
           <div>
-            <p className="font-semibold text-black">Demo Credentials:</p>
-            <p className="text-[11px] text-neutral-500 font-mono mt-0.5">AI campuspulse · AIcampuspulse</p>
+            <p className="font-semibold text-black">Login Credentials:</p>
+            <p className="text-[11px] text-neutral-600 font-mono mt-0.5 font-bold">AIcampuspulse · AI@9999</p>
           </div>
           <button
             type="button"
